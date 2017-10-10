@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const path = require('path')
 const store = require('node-persist')
 const pickManifest = require('npm-pick-manifest')
 const request = require('./request')
@@ -8,7 +9,9 @@ const dots = require('cli-spinners').dots.frames
 let prevSpin = Date.now() - 1000
 spin()
 
-store.initSync()
+store.initSync({
+  dir: path.join(__dirname, '.cache')
+})
 
 if (process.argv.length !== 3) {
   console.log('Usage: download-size package-name')
@@ -50,7 +53,9 @@ async function getSize (pkgName) {
 
   let size = 0
   for (let pkg in resolved) {
-    size += await getTarballSize(resolved[pkg])
+    let pkgSize = await getTarballSize(resolved[pkg])
+//    console.log(pkg.split('@').join('\t'), '\t', pkgSize)
+    size += pkgSize
   }
 
   return size
@@ -111,7 +116,9 @@ async function getTarballSize (tarballUrl) {
 function prettyPrint (size) {
   let converted = prefix.byte.convert(size)
   process.stdout.write('\b') // remove spinner
-  console.log(converted[0].toFixed(2) + ' ' + converted[1])
+  let output = converted[0].toFixed(2) + ' ' + converted[1]
+  console.log(output)
+  return output
 }
 
 function spin () {
