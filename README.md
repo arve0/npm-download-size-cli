@@ -25,5 +25,8 @@ The reported size includes dependecies. `download-size` gets size from the gzipp
 
 Requests to registry.npmjs.com is gzipped and cached to save bandwidth.
 
+## Why?
+Many node packages are bloated beyond belief. This tool helps you take an informed decision. Should you rely on that package? [1,1 MB for doing HTTP requests](https://asciinema.org/a/GqCnDlllrI0YtJgc7BkxisCla) you say? Say no to bloat!
+
 ## License
 MIT
