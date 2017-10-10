@@ -1,5 +1,5 @@
 # npm download size
-On slow connection or mobile plan? How many bytes will `npm i lodash` download This tool resolves dependencies and checks their tarball sizes with a HTTP HEAD request, so you can check download size up front.
+Are you on slow connection or mobile plan? How many bytes will `npm i lodash` download? This tool resolves dependencies and checks their tarball sizes with a [HTTP HEAD request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD), so you can check download size before doing `npm install package`.
 
 ## Install
 
@@ -18,9 +18,10 @@ $ download-size async
 $ download-size chalk
 30.49 KiB
 $ download-size express
+1.08 MiB
 ```
 
-The reported download size includes size of package pluss size of dependecies. Size reported is the size of packages gzipped tarball, so space on disk will be higher.
+The reported size includes dependecies. `download-size` gets size from the gzipped tarballs (e.g. http://registry.npmjs.org/lodash/-/lodash-4.17.4.tgz), so space on disk will be higher.
 
 Requests to registry.npmjs.com is gzipped and cached to save bandwidth.
 
