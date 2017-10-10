@@ -1,0 +1,37 @@
+{
+  "name": "download-size",
+  "version": "1.0.0",
+  "description": "check download size of npmjs packages before downloading",
+  "main": "index.js",
+  "bin": "./index.js",
+  "scripts": {
+    "test": "node index.js async"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arve0/download-size.git"
+  },
+  "keywords": [
+    "npmjs",
+    "download",
+    "size",
+    "tar",
+    "package"
+  ],
+  "author": "Arve Seljebu",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/arve0/download-size/issues"
+  },
+  "homepage": "https://github.com/arve0/download-size#readme",
+  "dependencies": {
+    "async": "^2.5.0",
+    "nedb": "^1.8.0",
+    "node-persist": "^2.1.0",
+    "npm-pick-manifest": "^2.0.0",
+    "p-limit": "^1.1.0",
+    "resolve-package-json": "^1.2.0",
+    "si-prefix": "^0.1.0",
+    "validate-npm-package-name": "^3.0.0"
+  }
+}
