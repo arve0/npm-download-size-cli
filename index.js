@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-const zlib = require('zlib')
-const https = require('https')
 const store = require('node-persist')
 const pickManifest = require('npm-pick-manifest')
+const request = require('./request')
 const url = require('url')
-const plimit = require('p-limit')
 const prefix = require('si-prefix')
-const validatePkgName = require('validate-npm-package-name')
+const dots = require('cli-spinners').dots.frames
+let prevSpin = Date.now() - 1000
+spin()
 
 store.initSync()
 
@@ -24,132 +24,103 @@ if (process.argv.length !== 3) {
     })
 }
 
-function prettyPrint (size) {
-  let converted = prefix.byte.convert(size)
-  console.log(converted[0].toFixed(2) + ' ' + converted[1])
-}
-
-function getFromCache (pkgName, checkForUpdates) {
-  return new Promise((resolve, reject) => {
-    let cache = store.getItemSync(pkgName)
-    if (cache === undefined) {
-      return reject(new Error('Not found in cache'))
-    }
-    if (!checkForUpdates) {
-      return resolve(cache)
-    }
-    // check if it's been updated
-    const headReq = https.request({
-      host: 'registry.npmjs.org',
-      path: '/' + pkgName,
-      method: 'HEAD'
-    })
-    headReq.on('response', (response) => {
-      if (response.headers['last-modified'] === cache['_last-modified']) {
-        resolve(cache)
-      } else {
-        reject(new Error('Cache outdated'))
-      }
-    })
-    headReq.end()
-  })
-}
-
-function getFromRegistry (pkgName) {
-  return new Promise((resolve, reject) => {
-    const request = https.get({
-      host: 'registry.npmjs.org',
-      path: '/' + pkgName,
-      headers: { 'Accept-Encoding': 'gzip' }
-    })
-
-    request.on('response', (response) => {
-      if (response.statusCode !== 200) {
-        return reject(new Error(`Got code ${response.statusCode} for ${pkgName}`))
-      } else if (response.headers['content-encoding'] !== 'gzip') {
-        return reject(new Error(`Did not get gzipped content from registry for package ${pkgName}.`))
-      }
-
-      let readable = response.pipe(zlib.createGunzip())
-      let str = ''
-      readable.setEncoding('utf8')
-      readable.on('data', (chunk) => {
-        str += chunk
-      })
-
-      readable.on('end', () => {
-        let obj = JSON.parse(str)
-        obj['_last-modified'] = response.headers['last-modified']
-        store.setItemSync(pkgName, obj)
-        resolve(obj)
-      })
-    })
-  })
-}
-
-function getTarballSize (tarballUrl) {
-  return new Promise((resolve, reject) => {
-    let { hostname, path } = url.parse(tarballUrl)
-    const headReq = https.request({
-      hostname,
-      path,
-      method: 'HEAD'
-    })
-    headReq.on('response', (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`Got code ${response.statusCode} for ${tarballUrl}`))
-      } else if (response.headers['content-length']) {
-        let size = parseInt(response.headers['content-length'])
-        if (typeof size !== 'number' || !isFinite(size)) {
-          return reject(new Error(`Unable to parse content-length ${response.headers['content-length']} of ${tarballUrl}`))
-        }
-        resolve(size)
-      } else {
-        reject(new Error(`Did not get content length for ${tarballUrl}`))
-      }
-    })
-    headReq.end()
-  })
-}
-
 let pending = {}
+async function resolve (pkgName, version, resolved = {}) {
+  spin()
+  let packument = await getPackument(pkgName, version === undefined)
+  version = version || packument['dist-tags'].latest
+  let manifest = pickManifest(packument, version)
 
-async function getSize (pkgName, version) {
-  if (!validPkgName(pkgName)) {
-    throw new Error(`${pkgName} is not a valid package name`)
+  let depVer = `${pkgName}@${manifest.version}`
+  if (depVer in resolved) {
+    return resolved
   }
-  let registry = await getFromCache(pkgName, version === undefined)
-    .catch(() => getFromRegistry(pkgName))
-
-  version = version || registry['dist-tags'].latest
-  let manifest = pickManifest(registry, version)
-  if (manifest._size) {
-    return manifest._size
-  }
+  resolved[depVer] = manifest.dist.tarball
 
   let deps = manifest.dependencies || {}
-  let size = 0
-  let limit = plimit(10)
-  let depSizes = Object.keys(deps).map(dep =>
-    limit(() => {
-      let depVer = dep + deps[dep]
-      if (!pending[depVer]) {
-        pending[depVer] = getSize(dep, deps[dep])
-      }
-      return pending[depVer]
-    })
-  )
-  size += await Promise.all(depSizes)
-    .then(sizes => sizes.reduce((sum, s) => sum + s, 0))
+  for (let dep in deps) {
+    spin()
+    resolved = await resolve(dep, deps[dep], resolved)
+  }
+  return resolved
+}
 
-  size += await getTarballSize(manifest.dist.tarball)
-  manifest._size = size
-  store.setItemSync(pkgName, registry)
+async function getSize (pkgName) {
+  let resolved = await resolve(pkgName)
+
+  let size = 0
+  for (let pkg in resolved) {
+    size += await getTarballSize(resolved[pkg])
+  }
 
   return size
 }
 
-function validPkgName (pkgName) {
-  let res = validatePkgName(pkgName)
-  return res.validForNewPackages || res.validForOldPackages
+async function getPackument (pkgName, checkForUpdates) {
+  let packument = await store.getItem(pkgName)
+  if (packument === undefined) {
+    return getFromRegistry(pkgName)
+  }
+  if (!checkForUpdates) {
+    return packument
+  }
+  // check if it's been updated
+  let response = await request.head({
+    host: 'registry.npmjs.org',
+    path: '/' + pkgName,
+    method: 'HEAD'
+  })
+  if (response.headers['last-modified'] !== packument['_last-modified']) {
+    return getFromRegistry(pkgName)
+  }
+  return packument
+}
+
+async function getFromRegistry (pkgName) {
+  const packument = await request.get({
+    host: 'registry.npmjs.org',
+    path: '/' + pkgName
+  })
+  store.setItemSync(pkgName, packument)
+  return packument
+}
+
+async function getTarballSize (tarballUrl) {
+  let size = await store.getItem(tarballUrl)
+  if (typeof size === 'number') {
+    return size
+  }
+  let { hostname, path } = url.parse(tarballUrl)
+  const response = await request.head({
+    hostname,
+    path
+  })
+
+  if (!response.headers['content-length']) {
+    throw new Error(`Did not get content length for ${tarballUrl}`)
+  }
+
+  size = parseInt(response.headers['content-length'])
+  if (typeof size !== 'number' || !isFinite(size)) {
+    throw new Error(`Unable to parse content-length ${response.headers['content-length']} of ${tarballUrl}`)
+  }
+  store.setItem(tarballUrl, size)
+  return size
+}
+
+function prettyPrint (size) {
+  let converted = prefix.byte.convert(size)
+  process.stdout.write('\b') // remove spinner
+  console.log(converted[0].toFixed(2) + ' ' + converted[1])
+}
+
+function spin () {
+  if ((Date.now() - prevSpin) < 100) {
+    return
+  }
+  prevSpin = Date.now()
+  let c = dots.shift()
+  dots.push(c)
+  process.stdout.write('\b')
+  process.stdout.write(c)
 }

@@ -25,13 +25,10 @@
   },
   "homepage": "https://github.com/arve0/download-size#readme",
   "dependencies": {
-    "async": "^2.5.0",
-    "nedb": "^1.8.0",
+    "cli-spinners": "^1.1.0",
     "node-persist": "^2.1.0",
     "npm-pick-manifest": "^2.0.0",
-    "p-limit": "^1.1.0",
-    "resolve-package-json": "^1.2.0",
-    "si-prefix": "^0.1.0",
-    "validate-npm-package-name": "^3.0.0"
+    "p-queue": "^2.2.0",
+    "si-prefix": "^0.1.0"
   }
 }
