@@ -34,7 +34,7 @@ exports.get = function (options) {
 
       readable.on('end', () => {
         let obj = JSON.parse(body)
-        obj['_last-modified'] = response['last-modified']
+        obj['_last-modified'] = response.headers['last-modified']
         resolve(obj)
       })
     })
