@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const path = require('path')
 const store = require('node-persist')
-const pickManifest = require('npm-pick-manifest')
+const pacote = require('pacote')
 const request = require('./request')
 const url = require('url')
 const prefix = require('si-prefix')
@@ -13,7 +13,7 @@ store.initSync({
   dir: path.join(__dirname, '.cache')
 })
 
-if (process.argv.length !== 3) {
+if (process.argv.length !== 3 || process.argv[2] === '--help') {
   console.log('Usage: download-size package-name')
   console.log('Clear cache: download-size --clear-cache')
 } else if (process.argv[2] === '--clear-cache') {
@@ -27,24 +27,23 @@ if (process.argv.length !== 3) {
     })
 }
 
-let pending = {}
 async function resolve (pkgName, version, resolved = {}) {
   spin()
-  let packument = await getPackument(pkgName, version === undefined)
-  version = version || packument['dist-tags'].latest
-  let manifest = pickManifest(packument, version)
+  version = version || 'latest'
+  let manifest = await pacote.manifest(`${pkgName}@${version}`)
 
   let depVer = `${pkgName}@${manifest.version}`
   if (depVer in resolved) {
     return resolved
   }
-  resolved[depVer] = manifest.dist.tarball
+  resolved[depVer] = manifest._resolved
 
+  let pending = []
   let deps = manifest.dependencies || {}
   for (let dep in deps) {
-    spin()
-    resolved = await resolve(dep, deps[dep], resolved)
+    pending.push(resolve(dep, deps[dep], resolved))
   }
+  await Promise.all(pending)
   return resolved
 }
 
@@ -54,40 +53,11 @@ async function getSize (pkgName) {
   let size = 0
   for (let pkg in resolved) {
     let pkgSize = await getTarballSize(resolved[pkg])
-//    console.log(pkg.split('@').join('\t'), '\t', pkgSize)
+    // console.log(pkg.split('@').join('\t'), '\t', pkgSize)
     size += pkgSize
   }
 
   return size
-}
-
-async function getPackument (pkgName, checkForUpdates) {
-  let packument = await store.getItem(pkgName)
-  if (packument === undefined) {
-    return getFromRegistry(pkgName)
-  }
-  if (!checkForUpdates) {
-    return packument
-  }
-  // check if it's been updated
-  let response = await request.head({
-    host: 'registry.npmjs.org',
-    path: '/' + pkgName,
-    method: 'HEAD'
-  })
-  if (response.headers['last-modified'] !== packument['_last-modified']) {
-    return getFromRegistry(pkgName)
-  }
-  return packument
-}
-
-async function getFromRegistry (pkgName) {
-  const packument = await request.get({
-    host: 'registry.npmjs.org',
-    path: '/' + pkgName
-  })
-  store.setItemSync(pkgName, packument)
-  return packument
 }
 
 async function getTarballSize (tarballUrl) {

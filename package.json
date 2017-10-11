@@ -27,8 +27,8 @@
   "dependencies": {
     "cli-spinners": "^1.1.0",
     "node-persist": "^2.1.0",
-    "npm-pick-manifest": "^2.0.0",
     "p-queue": "^2.2.0",
+    "pacote": "^6.0.4",
     "si-prefix": "^0.1.0"
   }
 }
