@@ -28,9 +28,9 @@ if (process.argv.length !== 3 || process.argv[2] === '--help') {
 }
 
 async function resolve (pkgName, version, resolved = {}) {
-  spin()
   version = version || 'latest'
   let manifest = await pacote.manifest(`${pkgName}@${version}`)
+  spin()
 
   let depVer = `${pkgName}@${manifest.version}`
   if (depVer in resolved) {
@@ -44,27 +44,34 @@ async function resolve (pkgName, version, resolved = {}) {
     pending.push(resolve(dep, deps[dep], resolved))
   }
   await Promise.all(pending)
+
   return resolved
 }
 
 async function getSize (pkgName) {
   let resolved = await resolve(pkgName)
 
-  let size = 0
+  let pending = []
   for (let pkg in resolved) {
-    let pkgSize = await getTarballSize(resolved[pkg])
-    // console.log(pkg.split('@').join('\t'), '\t', pkgSize)
-    size += pkgSize
+    pending.push(getTarballSize(resolved[pkg]))
   }
+  let sizes = await Promise.all(pending)
 
-  return size
+  return sum(sizes)
+}
+
+function sum (arr) {
+  return arr.reduce((s, i) => s + i, 0)
 }
 
 async function getTarballSize (tarballUrl) {
   let size = await store.getItem(tarballUrl)
+  spin()
+
   if (typeof size === 'number') {
     return size
   }
+
   let { hostname, path } = url.parse(tarballUrl)
   const response = await request.head({
     hostname,
@@ -76,9 +83,11 @@ async function getTarballSize (tarballUrl) {
   }
 
   size = parseInt(response.headers['content-length'])
+
   if (typeof size !== 'number' || !isFinite(size)) {
     throw new Error(`Unable to parse content-length ${response.headers['content-length']} of ${tarballUrl}`)
   }
+
   store.setItem(tarballUrl, size)
   return size
 }
