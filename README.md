@@ -25,7 +25,7 @@ $ download-size express
 
 The reported size includes dependecies. `download-size` gets size from the gzipped tarballs (e.g. http://registry.npmjs.org/lodash/-/lodash-4.17.4.tgz), so space on disk will be higher.
 
-Requests to registry.npmjs.com is gzipped and cached to save bandwidth.
+Dependencies are resolved through your local [npm cache](https://docs.npmjs.com/cli/cache) with [pacote](https://www.npmjs.com/package/pacote), which saves a lot of trafic with the [registry](https://docs.npmjs.com/misc/registry).
 
 ## Why?
 Many node packages are bloated beyond belief. This tool helps you take an informed decision. Should you rely on that package? [1,1 MB for doing HTTP requests](https://asciinema.org/a/GqCnDlllrI0YtJgc7BkxisCla) you say? Take a stand against bloat!

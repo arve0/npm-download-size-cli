@@ -9,27 +9,33 @@ const dots = require('cli-spinners').dots.frames
 let prevSpin = Date.now() - 1000
 spin()
 
+let cache = path.join(process.env.APPDATA || process.env.HOME, '.npm', '_cacache')
+
 store.initSync({
   dir: path.join(__dirname, '.cache')
 })
 
-if (process.argv.length !== 3 || process.argv[2] === '--help') {
-  console.log('Usage: download-size package-name')
-  console.log('Clear cache: download-size --clear-cache')
-} else if (process.argv[2] === '--clear-cache') {
-  store.clearSync()
-} else {
-  getSize(process.argv[2])
-    .then(prettyPrint)
-    .catch(err => {
-      console.error('' + err)
-      process.exit(1)
-    })
+async function main () {
+  if (process.argv.length < 3 || process.argv[2] === '--help') {
+    console.log('Usage: download-size package-name')
+    console.log('Clear cache: download-size --clear-cache')
+  } else if (process.argv[2] === '--clear-cache') {
+    store.clearSync()
+  } else {
+    for (let i = 2; i < process.argv.length; i++) {
+      let result = await getSize(process.argv[i])
+      console.log(`${result.name}: ${result.size}`)
+    }
+  }
 }
+main().catch((err) => {
+  console.error('' + err)
+  process.exit(1)
+})
 
 async function resolve (pkgName, version, resolved = {}) {
   version = version || 'latest'
-  let manifest = await pacote.manifest(`${pkgName}@${version}`)
+  let manifest = await pacote.manifest(`${pkgName}@${version}`, { cache })
   spin()
 
   let depVer = `${pkgName}@${manifest.version}`
@@ -45,19 +51,22 @@ async function resolve (pkgName, version, resolved = {}) {
   }
   await Promise.all(pending)
 
-  return resolved
+  return { depVer, pkgs: resolved }
 }
 
 async function getSize (pkgName) {
   let resolved = await resolve(pkgName)
 
   let pending = []
-  for (let pkg in resolved) {
-    pending.push(getTarballSize(resolved[pkg]))
+  for (let pkg in resolved.pkgs) {
+    pending.push(getTarballSize(resolved.pkgs[pkg]))
   }
   let sizes = await Promise.all(pending)
 
-  return sum(sizes)
+  return {
+    name: resolved.depVer,
+    size: prettyPrint(sum(sizes))
+  }
 }
 
 function sum (arr) {
@@ -96,7 +105,6 @@ function prettyPrint (size) {
   let converted = prefix.byte.convert(size)
   process.stdout.write('\b') // remove spinner
   let output = converted[0].toFixed(2) + ' ' + converted[1]
-  console.log(output)
   return output
 }
 
