@@ -10,7 +10,7 @@
       "name": "Launch Program",
       "program": "${workspaceFolder}/index.js",
       "args": [
-        "async"
+        "fj"
       ]
     }
   ]
