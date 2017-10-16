@@ -6,7 +6,7 @@ let interval = setInterval(() => {
   let c = spinners.shift()
   process.stdout.write('\b')  // backspace
   process.stdout.write(c)
-  spinners.push()
+  spinners.push(c)
 }, 100)
 
 main()
