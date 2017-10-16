@@ -1,7 +1,7 @@
 # npm download size
 Are you on slow connection or limited mobile plan? Care about tarball size of your package? How many bytes download are `npm i -S lodash`? Check the download size with `download-size package` before installing!
 
-This tool resolves dependencies and checks their tarball sizes with [HTTP HEAD requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD), so you can check download size before doing `npm install package`. The requests are done  [server side](https://github.com/arve0/npm-download-size-api).
+This tool resolves dependencies and checks their tarball sizes with [HTTP HEAD requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD), so you can check download size before doing `npm install package`. The requests are done  [server side](https://github.com/arve0/npm-download-size-api). Web client is available here: https://arve0.github.io/npm-download-size/
 
 ## Install
 
