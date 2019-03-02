@@ -1,6 +1,6 @@
 {
   "name": "download-size",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "check download size of npmjs packages before downloading",
   "main": "index.js",
   "bin": "./index.js",
