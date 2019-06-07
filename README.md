@@ -36,7 +36,7 @@ The reported size includes all dependecies. `download-size` gets size from the g
 
 
 ## Why?
-Many node packages are bloated beyond belief. This tool helps you take an informed decision. Should you rely on that package? [1,1 MB for doing HTTP requests](https://asciinema.org/a/GqCnDlllrI0YtJgc7BkxisCla) you say? Take a stand against bloat!
+Many node packages are bloated beyond belief. This tool helps you take an informed decision. Should you rely on that package? [1,1 MB for doing HTTP requests](https://arve0.github.io/npm-download-size/#request) you say? Take a stand against bloat!
 
 ## License
 MIT
