@@ -7,7 +7,7 @@
   "scripts": {
     "preversion": "npm test",
     "postpublish": "git push && git push --tags",
-    "test": "node index.js async"
+    "test": "node index.js async && node index.js @angular/core"
   },
   "repository": {
     "type": "git",

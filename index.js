@@ -31,7 +31,7 @@ async function main () {
 function request (pkgName) {
   const options = {
     hostname: 'npm-download-size.seljebu.no',
-    path: '/' + pkgName,
+    path: '/' + encodeURIComponent(pkgName),
     method: 'GET'
   }
   const req = https.request(options)
