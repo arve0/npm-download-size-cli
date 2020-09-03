@@ -31,7 +31,7 @@ async function main () {
           const devDeps = transformDepsObjToArray(devDependencies)
 
           console.log(`"${pkgJSONPath}" dependencies:`)
-          if (!deps.length) console.log("None")
+          if (!deps.length) console.log('None')
           else {
             for (const dep of deps) {
               total += await getPackageSize(dep)
@@ -45,12 +45,20 @@ async function main () {
               total += await getPackageSize(devDep)
             }
           }
+          console.log() // newline
         } catch (err) {
           console.error('' + err)
         }
-        continue
       }
-      total += await getPackageSize(argv[i])
+      else {
+        total += await getPackageSize(argv[i])
+        // Log newline if this is the last arg
+        // or the next arg is -f or --file
+        const j = i+1
+        if (j === argv.length || argv[j] === '-f' || argv[j] === '--file') {
+          console.log()
+        }
+      }
     }
     console.log(`Total size: ${total} bytes`)
   }
