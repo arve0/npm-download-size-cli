@@ -37,17 +37,20 @@ async function main () {
               total += await getPackageSize(dep)
             }
           }
+
+          console.log(`"${pkgJSONPath}" devDependencies:`)
+          if (!devDeps.length) console.log("None")
+          else {
+            for (const devDep of devDeps) {
+              total += await getPackageSize(devDep)
+            }
+          }
         } catch (err) {
           console.error('' + err)
         }
+        continue
       }
-      // try {
-      //   let result = await request(argv[i])
-      //   process.stdout.write('\b')  // backspace
-      //   console.log(`${result.name}@${result.version}: ${result.prettySize}`)
-      // } catch (err) {
-      //   console.error('' + err)
-      // }
+      total += await getPackageSize(argv[i])
     }
   }
   clearInterval(interval)
