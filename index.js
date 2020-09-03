@@ -30,8 +30,16 @@ async function main () {
           const deps = transformDepsObjToArray(dependencies)
           const devDeps = transformDepsObjToArray(devDependencies)
 
-          console.log(deps)
-          console.log(devDeps)
+          console.log(`"${pkgJSONPath}" dependencies:`)
+          if (!deps.length) console.log("None")
+          else {
+            for (const dep of deps) {
+              let result = await request(dep)
+              total += result.size
+              process.stdout.write('\b')  // backspace
+              console.log(`${result.name}@${result.version}: ${result.prettySize} -- ${result.size}`)
+            }
+          }
         } catch (err) {
           console.error('' + err)
         }
