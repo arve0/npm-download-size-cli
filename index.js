@@ -25,7 +25,13 @@ async function main () {
 
         try {
           const pkgJSON = fs.readFileSync(pkgJSONPath, {encoding: 'utf8'})
-          console.log(pkgJSON)
+          const { dependencies, devDependencies } = JSON.parse(pkgJSON)
+
+          const deps = transformDepsObjToArray(dependencies)
+          const devDeps = transformDepsObjToArray(devDependencies)
+
+          console.log(deps)
+          console.log(devDeps)
         } catch (err) {
           console.error('' + err)
         }
@@ -40,6 +46,15 @@ async function main () {
     }
   }
   clearInterval(interval)
+}
+
+/**
+ * Transform a dependency obj like `{"autopefixer": "^9.8.6", ...}`
+ * into an array `["autoprefixer@^9.8.6", ...]`
+ */
+function transformDepsObjToArray (deps) {
+  if (!deps) return []
+  return Object.entries(deps).map(([pkgName, version]) => `${pkgName}@${version}`)
 }
 
 function request (pkgName) {
