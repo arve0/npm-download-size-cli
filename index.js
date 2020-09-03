@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const https = require('https')
+const fs = require('fs')
 
 let spinners = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 let interval = setInterval(() => {
@@ -18,18 +19,24 @@ async function main () {
   } else {
     let total = 0;
     for (let i = 2; i < argv.length; i++) {
-      if (argv[i] === "-f" || argv[i] === "--file") {
+      if (argv[i] === '-f' || argv[i] === '--file') {
         // The next arg must be a path to a package.json file
-        const pkgJSONPath = argv[++i];
-        console.log(pkgJSONPath)
+        const pkgJSONPath = argv[++i]
+
+        try {
+          const pkgJSON = fs.readFileSync(pkgJSONPath, {encoding: 'utf8'})
+          console.log(pkgJSON)
+        } catch (err) {
+          console.error('' + err)
+        }
       }
-      try {
-        let result = await request(argv[i])
-        process.stdout.write('\b')  // backspace
-        console.log(`${result.name}@${result.version}: ${result.prettySize}`)
-      } catch (err) {
-        console.error('' + err)
-      }
+      // try {
+      //   let result = await request(argv[i])
+      //   process.stdout.write('\b')  // backspace
+      //   console.log(`${result.name}@${result.version}: ${result.prettySize}`)
+      // } catch (err) {
+      //   console.error('' + err)
+      // }
     }
   }
   clearInterval(interval)
