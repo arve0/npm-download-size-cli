@@ -34,10 +34,7 @@ async function main () {
           if (!deps.length) console.log("None")
           else {
             for (const dep of deps) {
-              let result = await request(dep)
-              total += result.size
-              process.stdout.write('\b')  // backspace
-              console.log(`${result.name}@${result.version}: ${result.prettySize} -- ${result.size}`)
+              total += await getPackageSize(dep)
             }
           }
         } catch (err) {
@@ -63,6 +60,23 @@ async function main () {
 function transformDepsObjToArray (deps) {
   if (!deps) return []
   return Object.entries(deps).map(([pkgName, version]) => `${pkgName}@${version}`)
+}
+
+/**
+ * Get the size of a package and log it
+ * @return the size of the package
+ */
+async function getPackageSize(pkgName) {
+  let size = 0
+  try {
+    let result = await request(pkgName)
+    size = result.size
+    process.stdout.write('\b')  // backspace
+    console.log(`${result.name}@${result.version}: ${result.prettySize}`)
+  } catch (err) {
+    console.error('' + err)
+  }
+  return size
 }
 
 function request (pkgName) {
