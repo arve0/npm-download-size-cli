@@ -52,6 +52,7 @@ async function main () {
       }
       total += await getPackageSize(argv[i])
     }
+    console.log(`Total size: ${total} bytes`)
   }
   clearInterval(interval)
 }
