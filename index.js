@@ -38,7 +38,7 @@ async function main () {
             }
           }
 
-          console.log(`"${pkgJSONPath}" devDependencies:`)
+          console.log(`\n"${pkgJSONPath}" devDependencies:`)
           if (!devDeps.length) console.log("None")
           else {
             for (const devDep of devDeps) {
