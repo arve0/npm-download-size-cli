@@ -18,6 +18,11 @@ async function main () {
   } else {
     let total = 0;
     for (let i = 2; i < argv.length; i++) {
+      if (argv[i] === "-f" || argv[i] === "--file") {
+        // The next arg must be a path to a package.json file
+        const pkgJSONPath = argv[++i];
+        console.log(pkgJSONPath)
+      }
       try {
         let result = await request(argv[i])
         process.stdout.write('\b')  // backspace
