@@ -12,12 +12,14 @@ let interval = setInterval(() => {
 main()
 
 async function main () {
-  if (process.argv.length < 3 || process.argv[2] === '--help') {
+  const { argv } = process;
+  if (argv.length < 3 || argv[2] === '--help') {
     console.log('Usage: download-size package-name [another-package ...]')
   } else {
-    for (let i = 2; i < process.argv.length; i++) {
+    let total = 0;
+    for (let i = 2; i < argv.length; i++) {
       try {
-        let result = await request(process.argv[i])
+        let result = await request(argv[i])
         process.stdout.write('\b')  // backspace
         console.log(`${result.name}@${result.version}: ${result.prettySize}`)
       } catch (err) {
