@@ -7,7 +7,11 @@
   "scripts": {
     "preversion": "npm test",
     "postpublish": "git push && git push --tags",
-    "test": "node index.js async && node index.js @angular/core"
+    "test": "npm run test:single && npm run test:multiple && npm run test:no-package && npm run test:no-file",
+    "test:single" : "node index.js async",
+    "test:multiple" : "node index.js async -f package.json @angular/core",
+    "test:no-package" : "node index.js asdfnjjqjwjjds",
+    "test:no-file" : "node index.js -f missing-file.json"
   },
   "repository": {
     "type": "git",
@@ -26,5 +30,7 @@
     "url": "https://github.com/arve0/download-size/issues"
   },
   "homepage": "https://github.com/arve0/download-size#readme",
-  "dependencies": {}
+  "dependencies": {
+    "si-prefix": "^0.2.0"
+  }
 }
