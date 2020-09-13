@@ -20,16 +20,21 @@ npm install -g download-size  # 8 KiB download
 
 ## Usage
 ```sh
-$ download-size lodash
-303.39 KiB
-$ download-size request
-1.24 MiB
-$ download-size async
-401.05 KiB
-$ download-size chalk
-30.49 KiB
-$ download-size express
-1.08 MiB
+$ download-size svelte
+svelte@3.25.0: 1.12 MiB
+
+$ download-size -f package.json
+package.json (svelte-app@1.0.0):
+  devDependencies:
+    npm-run-all@4.1.5: 429.35 KiB
+    rollup@1.32.1: 845.42 KiB
+    rollup-plugin-commonjs@10.1.0: 216.54 KiB
+    rollup-plugin-livereload@1.3.0: 239.76 KiB
+    rollup-plugin-node-resolve@5.2.0: 185.16 KiB
+    rollup-plugin-svelte@5.2.3: 71.01 KiB
+    rollup-plugin-terser@5.3.1: 827.78 KiB
+    svelte@3.25.0: 1.12 MiB
+All dependencies: 3.87 MiB
 ```
 
 The reported size includes all dependecies. `download-size` gets size from the gzipped tarballs (e.g. http://registry.npmjs.org/lodash/-/lodash-4.17.4.tgz), so space on disk will be higher.
