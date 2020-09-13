@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const https = require('https')
 const fs = require('fs')
+const siPrefix = require('si-prefix')
 
 let spinners = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 let interval = setInterval(() => {
@@ -10,59 +11,131 @@ let interval = setInterval(() => {
   spinners.push(c)
 }, 100)
 
-main()
+main().catch(err => {
+  eraseSpinner()
+  console.log('' + err)
+}).then(() => {
+  clearInterval(interval)
+})
 
-async function main () {
+async function main() {
   const { argv } = process;
   if (argv.length < 3 || argv[2] === '--help') {
-    console.log('Usage: download-size package-name [another-package ...]')
+    console.log('Usage: ')
+    console.log('  download-size package-name [another-package ...]')
+    console.log('  download-size -f package.json [another-package ...]')
   } else {
+    let packagesAndOrFiles = parseArgumentsToPackages(argv.slice(2))
+
     let total = 0;
-    for (let i = 2; i < argv.length; i++) {
-      if (argv[i] === '-f' || argv[i] === '--file') {
-        // The next arg must be a path to a package.json file
-        const pkgJSONPath = argv[++i]
+    for (let packageOrFile of packagesAndOrFiles) {
+      if (packageOrFile.filename) {
+        let fileTotal = 0
+        eraseSpinner()
+        console.log(`${packageOrFile.filename} (${packageOrFile.name}):`)
 
-        try {
-          const pkgJSON = fs.readFileSync(pkgJSONPath, {encoding: 'utf8'})
-          const { dependencies, devDependencies } = JSON.parse(pkgJSON)
-
-          const deps = transformDepsObjToArray(dependencies)
-          const devDeps = transformDepsObjToArray(devDependencies)
-
-          console.log(`"${pkgJSONPath}" dependencies:`)
-          if (!deps.length) console.log('None')
-          else {
-            for (const dep of deps) {
-              total += await getPackageSize(dep)
+        async function printDependenciesAndAddToTotal(key) {
+          if (packageOrFile[key].length) {
+            console.log(`  ${key}:`)
+          }
+          for (let dependency of packageOrFile[key]) {
+            try {
+              let result = await request(dependency)
+              fileTotal += result.size
+              total += result.size
+              printPackageSize(result, '    ')
+            } catch (err) {
+              eraseSpinner()
+              console.log('' + err)
             }
           }
-
-          console.log(`\n"${pkgJSONPath}" devDependencies:`)
-          if (!devDeps.length) console.log("None")
-          else {
-            for (const devDep of devDeps) {
-              total += await getPackageSize(devDep)
-            }
-          }
-          console.log() // newline
-        } catch (err) {
-          console.error('' + err)
         }
-      }
-      else {
-        total += await getPackageSize(argv[i])
-        // Log newline if this is the last arg
-        // or the next arg is -f or --file
-        const j = i+1
-        if (j === argv.length || argv[j] === '-f' || argv[j] === '--file') {
-          console.log()
+
+        await printDependenciesAndAddToTotal('dependencies')
+        await printDependenciesAndAddToTotal('devDependencies')
+        console.log(`All dependencies: ${pretty(fileTotal)}\n`)
+      } else {
+        try {
+          let result = await request(packageOrFile.name)
+          total += result.size
+          printPackageSize(result, '')
+        } catch (err) {
+          eraseSpinner()
+          console.log('' + err)
         }
       }
     }
-    console.log(`Total size: ${total} bytes`)
+
+    if (hasMultiplePackages(packagesAndOrFiles)) {
+      console.log(`\nAll packages: ${pretty(total)}`)
+    }
   }
-  clearInterval(interval)
+}
+
+/**
+ * Parse arguments into:
+ * [
+ *  {
+ *    name: string
+ *  },
+ *  {
+ *    name: string,
+ *    filename: string,
+ *    dependencies: string[],
+ *    devDependencies: string[],
+ *  },
+ * ]
+ */
+function parseArgumentsToPackages(args) {
+  const packages = []
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '-f' || args[i] === '--file') {
+      i += 1 // jump past -f option
+
+      const filename = args[i]
+      if (filename === undefined) {
+        throw new Error(`Expected filename after ${args[i - 1]}`)
+      }
+
+      try {
+        const pkg = JSON.parse(
+          fs.readFileSync(filename, { encoding: 'utf8' })
+        )
+        const name = `${pkg.name}@${pkg.version}`
+        const dependencies = transformDepsObjToArray(pkg.dependencies)
+        const devDependencies = transformDepsObjToArray(pkg.devDependencies)
+
+        packages.push({ name, filename, dependencies, devDependencies })
+      } catch (err) {
+        throw new Error(`Unable to read file '${filename}': ${err}`)
+      }
+    } else {
+      packages.push({ name: args[i] })
+    }
+  }
+
+  packages.sort((a, b) => {
+    if (a.filename && !b.filename) {
+      return -1
+    } else if (!a.filename && b.filename) {
+      return 1
+    } else if (a.filename && b.filename) {
+      return nameCompare(a.filename, b.filename)
+    }
+    return nameCompare(a.name, b.name)
+  })
+
+  return packages
+}
+
+function nameCompare(a, b) {
+  if (a < b) {
+    return -1
+  } else if (a > b) {
+    return 1
+  } else {
+    return 0
+  }
 }
 
 /**
@@ -74,23 +147,16 @@ function transformDepsObjToArray (deps) {
   return Object.entries(deps).map(([pkgName, version]) => `${pkgName}@${version}`)
 }
 
-/**
- * Get the size of a package and log it
- * @return the size of the package
- */
-async function getPackageSize(pkgName) {
-  let size = 0
-  try {
-    let result = await request(pkgName)
-    size = result.size
-    process.stdout.write('\b')  // backspace
-    console.log(`${result.name}@${result.version}: ${result.prettySize}`)
-  } catch (err) {
-    console.error('' + err)
-  }
-  return size
+function printPackageSize(pkg, prefix) {
+  eraseSpinner()
+  console.log(`${prefix}${pkg.name}@${pkg.version}: ${pkg.prettySize}`)
 }
 
+function eraseSpinner() {
+  process.stdout.write('\b')  // backspace
+}
+
+// see https://npm-download-size.seljebu.no
 function request (pkgName) {
   const options = {
     hostname: 'npm-download-size.seljebu.no',
@@ -118,4 +184,19 @@ function request (pkgName) {
       })
     })
   })
+}
+
+function pretty (size) {
+  let [prettySize, postFix] = siPrefix.byte.convert(size)
+  return prettySize.toFixed(2) + ' ' + postFix
+}
+
+function hasMultiplePackages(packages) {
+  const numberOfPackages = packages.reduce((length, pkg) =>
+    pkg.filename
+      ? length + pkg.dependencies.length + pkg.devDependencies.length
+      : length + 1
+  , 0)
+
+  return numberOfPackages > 1
 }
