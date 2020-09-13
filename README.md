@@ -15,7 +15,7 @@ Package sizes are resolved through a [server side API](https://github.com/arve0/
 ## Install
 
 ```sh
-npm install -g download-size  # 2 KiB download
+npm install -g download-size  # 8 KiB download
 ```
 
 ## Usage
