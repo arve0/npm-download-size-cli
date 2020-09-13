@@ -1,6 +1,6 @@
 {
   "name": "download-size",
-  "version": "1.3.5",
+  "version": "1.4.0",
   "description": "check download size of npmjs packages before downloading",
   "main": "index.js",
   "bin": "./index.js",
@@ -8,10 +8,10 @@
     "preversion": "npm test",
     "postpublish": "git push && git push --tags",
     "test": "npm run test:single && npm run test:multiple && npm run test:no-package && npm run test:no-file",
-    "test:single" : "node index.js async",
-    "test:multiple" : "node index.js async -f package.json @angular/core",
-    "test:no-package" : "node index.js asdfnjjqjwjjds",
-    "test:no-file" : "node index.js -f missing-file.json"
+    "test:single": "node index.js async",
+    "test:multiple": "node index.js async -f package.json @angular/core",
+    "test:no-package": "node index.js asdfnjjqjwjjds",
+    "test:no-file": "node index.js -f missing-file.json"
   },
   "repository": {
     "type": "git",
