@@ -66,7 +66,7 @@ async function main() {
       }
     }
 
-    if (hasMultiplePackages(packagesAndOrFiles)) {
+    if (packagesAndOrFiles.length > 1) {
       console.log(`\nAll packages: ${pretty(total)}`)
     }
   }
@@ -189,14 +189,4 @@ function request (pkgName) {
 function pretty (size) {
   let [prettySize, postFix] = siPrefix.byte.convert(size)
   return prettySize.toFixed(2) + ' ' + postFix
-}
-
-function hasMultiplePackages(packages) {
-  const numberOfPackages = packages.reduce((length, pkg) =>
-    pkg.filename
-      ? length + pkg.dependencies.length + pkg.devDependencies.length
-      : length + 1
-  , 0)
-
-  return numberOfPackages > 1
 }
